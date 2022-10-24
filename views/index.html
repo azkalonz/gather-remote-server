@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="/jquery.js"></script>
+    <style>
+      body {
+        max-width: 500px;
+        margin: 0 auto;
+        font-family: sans-serif;
+        padding: 50px;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        margin-right: 17px;
+      }
+      .caller {
+        height: 120px;
+        display: flex;
+        justify-content: flex-start;
+        width: 311px;
+        min-width: 311px;
+        align-items: center;
+      }
+      .avatar img {
+        object-fit: cover;
+        object-position: 0px -18px;
+        width: 100%;
+        height: 200%;
+        image-rendering: pixelated;
+        transform: translate3d(0px, 0px, 0px);
+      }
+      .caller a {
+        white-space: pre;
+      }
+      .host-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .host-status .indicator {
+        margin-right: 10px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: radial-gradient(#84ff7b, #01d51d);
+        border: 2px solid #fff;
+        outline: 3px solid #01d51d;
+      }
+      .host-status:not(.connected) .indicator {
+        background: red;
+        outline-color: red;
+      }
+      .player {
+        border: 1px solid #222;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        padding: 20px;
+        justify-content: center;
+      }
+      .player .avatar {
+        margin: 0 auto;
+        margin-bottom: 17px;
+      }
+      #log {
+        z-index: 100;
+        display: none;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 14px;
+        background: pink;
+        border: 1px solid red;
+      }
+      #log:not(.error) {
+        background-color: lightgreen;
+        border: 1px solid green;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="log"></div>
+    <div class="host-status">
+      <div class="indicator"></div>
+      <b class="host-text-status">Not Connected</b>
+    </div>
+    <div>
+      <h3>Status</h3>
+      <input type="text" id="custom-status" />
+      <button onclick="setStatus($('#custom-status').val())">SET</button><br />
+      <p>Presets:</p>
+      <button onclick="setStatus('brb')">BRB</button>
+      <button onclick="setStatus('break')">break</button>
+      <button onclick="setStatus('')">Clear</button><br />
+    </div>
+    <div>
+      <h3>Personal</h3>
+      <button onclick="toDesk()">TP To Desk</button>
+      <button onclick="copyOutfit()">Reset Outfit</button>
+    </div>
+    <div id="incoming-call">
+      <h3>Nearby <span id="count"></span></h3>
+      <div id="callers"></div>
+    </div>
+    <div>
+      <h3>Players</h3>
+      <div id="players"></div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      function setStatus(status) {
+        socket.emit(
+          "gatherRemoteFn",
+          `executeFunctionByName('setTextStatus', game, "${status}")`
+        );
+      }
+      function teleportTo(playerName) {
+        socket.emit(
+          "gatherRemoteFn",
+          `executeFunctionByName('teleportToPlayer', window, "${playerName}")`
+        );
+      }
+      function toDesk() {
+        socket.emit(
+          "gatherRemoteFn",
+          `executeFunctionByName('teleport', window, 21, 58)`
+        );
+      }
+      function copyOutfit(
+        outfit = '{"skin":{"id":"gV7nljNpXAGHgAEnbBWv","color":"2","name":"typical","type":"skin","subType":null,"isDefault":true,"previewUrl":"https://cdn.gather.town/storage.googleapis.com/gather-town.appspot.com/wearables/lD7OWDQ9lTha-OiVw-wz_","startDate":null,"endDate":null,"createdAt":"2022-04-01T15:00:00.000Z","updatedAt":"2022-09-27T18:09:11.459Z","parts":[{"layerId":"skin front","spritesheetId":"R7cVd1GzcUu4CbnXHAWe"}]},"hair":{"id":"8EWFG3DNPDsJHPq6d51D","color":"blue","name":"spiky","type":"hair","subType":null,"isDefault":true,"previewUrl":"https://cdn.gather.town/storage.googleapis.com/gather-town.appspot.com/wearables/hMvk8HCT5kbylAy9pn3_y","startDate":null,"endDate":null,"createdAt":"2022-04-01T15:00:00.000Z","updatedAt":"2022-09-27T18:09:08.241Z","parts":[{"layerId":"hair front","spritesheetId":"27fnMTPrlobIwNfTj6D8"}]},"facial_hair":null,"top":null,"bottom":{"id":"HVnnjByjqs6SVuosEHQ9","color":"black","name":"shorts","type":"bottom","subType":null,"isDefault":true,"previewUrl":"https://cdn.gather.town/storage.googleapis.com/gather-town.appspot.com/wearables/uVZJuhb0CU_cXO8AXFFqw","startDate":null,"endDate":null,"createdAt":"2022-04-01T15:00:00.000Z","updatedAt":"2022-09-27T18:09:09.811Z","parts":[{"layerId":"bottom front","spritesheetId":"igRBasdJCxtfIyNetCfx"}]},"shoes":{"id":"jWRxPyatM2P0bdzSnf50","color":"black","name":"generic","type":"shoes","subType":null,"isDefault":true,"previewUrl":"https://cdn.gather.town/storage.googleapis.com/gather-town.appspot.com/wearables/rbpTyhl5PUK9bdvPehj3W","startDate":null,"endDate":null,"createdAt":"2022-04-01T15:00:00.000Z","updatedAt":"2022-09-27T18:09:11.461Z","parts":[{"layerId":"shoes front","spritesheetId":"Thh1O95hOZKq4yyTmVQD"}]},"hat":{"id":"kqHc1Yp1TSADA3GoYogM","color":"blue","name":"christmas hats","type":"hat","subType":null,"isDefault":true,"previewUrl":"https://cdn.gather.town/storage.googleapis.com/gather-town.appspot.com/wearables/hMWhd-h3UfMAQ1Q0MCKc5","startDate":null,"endDate":null,"createdAt":"2022-04-01T15:00:00.000Z","updatedAt":"2022-09-27T18:09:11.463Z","parts":[{"layerId":"hat front","spritesheetId":"UfcWyVKg94zsMOZ5eD1f"}]},"glasses":null,"other":null,"costume":null,"mobility":null,"jacket":null}',
+        name = "Markus"
+      ) {
+        socket.emit(
+          "gatherRemoteFn",
+          `executeFunctionByName('setOutfitString', gameSpace, '${outfit}');
+          executeFunctionByName('setName', game, '${name}');`
+        );
+      }
+      function joinMe(name) {
+        socket.emit(
+          "gatherRemoteFn",
+          `executeFunctionByName('joinMe', window, '${name}')`
+        );
+      }
+      socket.on("success", function () {
+        $("#log").removeClass("error");
+        $("#log").text("Success");
+        $("#log").slideDown().delay(500).slideUp();
+      });
+      socket.on("players", function (players) {
+        $("#players").html("");
+        players.forEach(function (player) {
+          let u =
+            "https://dynamic-assets.gather.town/sprite/avatar-hat back.skin front.bottom front.shoes front.top front.hair front.hat front";
+          let costume = "";
+          let x = JSON.parse(player.outfitString);
+          Object.keys(x).map((q) => {
+            if (!!x[q]) {
+              x[q].parts.map((qq) => {
+                u = u.replace(qq.layerId, qq.spritesheetId);
+                if (qq.layerId == "costume front") {
+                  costume = `https://dynamic-assets.gather.town/sprite/avatar-${qq.spritesheetId}.png`;
+                }
+              });
+            }
+          });
+          $("#players").append(
+            `
+            <div class="player">
+                <div>
+                  <div class="avatar">
+                      <img src="${costume || u}.png" width="50"/>
+                  </div>
+                <a>${player.name}</a>
+                </div>
+                <div class="player-actions">
+                  <button onclick="teleportTo('${player.name}')">TP</button>
+                  <button class="p-${player.name}-cp">CP</button>
+                  <button class="p-${player.name}-jm">JM</button>
+                </div>
+            </div>
+            `
+          );
+          $(`.p-${player.name}-cp`).on("click", function () {
+            copyOutfit(player.outfitString, player.name);
+          });
+
+          $(`.p-${player.name}-jm`).on("click", function () {
+            joinMe(player.name);
+          });
+        });
+      });
+      socket.on("hostDisconnected", function () {
+        $(".host-status").removeClass("connected");
+        $(".host-text-status").text("Not Connected");
+      });
+      socket.on("hostConnected", function () {
+        $(".host-status").addClass("connected");
+        $(".host-text-status").text("Connected");
+      });
+      socket.on("incomingCall", function (people) {
+        $("#incoming-call").show();
+        $("#callers").html("");
+        $("#count").text(people.length);
+        people.forEach((p) => {
+          $("#callers").append(`
+            <div class="caller">
+                <div class="avatar">
+                    <img src="${p.avatar}" width="50"/>
+                </div>
+                <a>${p.name}</a>
+            </div>
+          `);
+        });
+      });
+      socket.on("noCalls", function () {
+        $("#callers").html("<i>You are alone right now.</i>");
+      });
+      socket.on("error", function (error) {
+        $("#log").addClass("error");
+        $("#log").text(error);
+        $("#log").slideUp().delay(2500).slideDown();
+      });
+    </script>
+  </body>
+</html>
